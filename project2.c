@@ -1,20 +1,85 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct node {
+ struct node {
 	char key;
-	struct node *left, *right;
+	int frequency;
+	struct node *left;
+	struct node *right;
 };
 
+
+
+// Function Prototypes
+struct node* newNode(char key);
+struct node* rightRotate(struct node* x);
+struct node* leftRotate(struct node* x);
+struct node* splay(struct node* root, char key);
+struct node* search(struct node* root, char key);
+struct node* modSplay(struct node* root, char key);
+void preOrder(struct node* root, FILE *outputFile);
+
+int comparison_count=0;
+int rotation_count=0;
+
+int main() {
+	
+    FILE *file;
+    char fileName[] = "input.txt";
+    file = fopen(fileName, "r");
+    
+    if (file == NULL) {
+        puts("File could not be opened");
+        return 1;
+    }
+    
+
+    FILE *output_file;
+    // Open the output file
+    output_file = fopen("output.txt", "w");
+    if (output_file == NULL) {
+        puts("Output file could not be opened");
+        return 1;
+    }
+
+    struct node* splayTree = NULL;
+    struct node* modSplayTree = NULL;
+    char ch;
+
+    // Process each character in the input file
+    while ((ch = fgetc(file)) != EOF) {
+        splayTree = splay(splayTree, ch);
+        modSplayTree = modSplay(modSplayTree, ch);
+    }
+
+    fclose(file);
+
+    // Write results to the output file
+    fprintf(output_file, "Splay Aðacý (Pre-Order):\n");
+    preOrder(splayTree, output_file);
+    fprintf(output_file, "\nToplam Karþýlaþtýrma: %d, Toplam Rotasyon: %d\n", comparison_count, rotation_count);
+
+    comparison_count = 0;
+    rotation_count = 0;
+
+    fprintf(output_file, "\nMod-Splay Aðacý (Pre-Order):\n");
+    preOrder(modSplayTree, output_file);
+    fprintf(output_file, "\nToplam Karþýlaþtýrma: %d, Toplam Rotasyon: %d\n", comparison_count, rotation_count);
+
+    // Close the output file
+    fclose(output_file);
+
+    return 0;
+}
+// YENÝ NODE EKLEME
 struct node* newNode(char key) {
 	struct node* node=(struct node*)malloc(sizeof(struct node));
 	node->key=key;
+	node->frequency=1;
 	node->left=node->right=NULL;
 	return (node);
 }
 
-int comparison_count=0;
-int rotation_count=0;
 
 
 
@@ -93,37 +158,43 @@ struct node *splay(struct node *root,char key) {
 	struct node *search(struct node *root, char key) {
     return splay(root, key);
 }
+
+struct node* modSplay(struct node* root, char key) {
+    root = search(root, key);
+    if (root->key == key) {
+        root->frequency++;
+    } else {
+        struct node* new_node = newNode(key);
+        if (root == NULL) {
+            return new_node;
+        } else if (root->key > key) {
+            new_node->right = root;
+            new_node->left = root->left;
+            root->left = NULL;
+        } else {
+            new_node->left = root;
+            new_node->right = root->right;
+            root->right = NULL;
+        }
+        root = new_node;
+    }
+
+    if (root->left != NULL && root->left->frequency > root->frequency) {
+        root = rightRotate(root);
+    } else if (root->right != NULL && root->right->frequency > root->frequency) {
+        root = leftRotate(root);
+    }
+
+    return root;
+}
  
 
-void preOrder(struct node *root) {
+void preOrder(struct node* root, FILE *outputFile) {
     if (root != NULL) {
-        printf("%c ", root->key);
-        preOrder(root->left);
-        preOrder(root->right);
+        fprintf(outputFile, "%c (%d) ", root->key, root->frequency);
+        preOrder(root->left, outputFile);
+        preOrder(root->right, outputFile);
     }
 }
 
-int main() {
-    struct node* root = newNode('W');
-    root->left = newNode('O');
-    root->right = newNode('R');
-    root->left->left = newNode('L');
-    root->right->right = newNode('D');
- 
-    printf("Pre-order traversal before search:\n");
-    preOrder(root);
-    printf("\n");
-
-    root = search(root, 'L');
-
-    printf("Pre-order traversal after search:\n");
-    preOrder(root);
-    printf("\n");
-
-    int total_cost = comparison_count + rotation_count;
-    printf("Total comparisons: %d\n", comparison_count);
-    printf("Total rotations: %d\n", rotation_count);
-    printf("Total cost: %d\n", total_cost);
-    return 0;
-}
 
