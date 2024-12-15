@@ -1,200 +1,212 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
- struct node {
-	char key;
-	int frequency;
-	struct node *left;
-	struct node *right;
+struct Node {
+    char key;  
+    int frequency;
+    struct Node *left;
+    struct Node *right;
+    struct Node *parent;
 };
 
+int splay_comparisons = 0;
+int splay_rotations = 0;
+int modsplay_comparisons = 0;
+int modsplay_rotations = 0;
+
+// Right rotation operation
+void right_rotate(struct Node **root, struct Node *x) {
+    struct Node *y = x->left;
+    x->left = y->right;
+    if (y->right != NULL) {
+        y->right->parent = x;
+    }
+    y->parent = x->parent;
+    if (x == *root) {
+        *root = y;
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
+    }
+    y->right = x;
+    x->parent = y;
+    splay_rotations++;
+}
+
+// Left rotation operation
+void left_rotate(struct Node **root, struct Node *x) {
+    struct Node *y = x->right;
+    x->right = y->left;
+    if (y->left != NULL) {
+        y->left->parent = x;
+    }
+    y->parent = x->parent;
+    if (x == *root) {
+        *root = y;
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
+    }
+    y->left = x;
+    x->parent = y;
+    splay_rotations++;
+}
+
+// Splay operation
+void splay(struct Node **root, struct Node *n) {
+    while (n->parent != NULL) {
+        struct Node *parent = n->parent;
+        struct Node *grandparent = parent->parent;
+
+        if (parent == *root) {
+            if (n == parent->left) {
+                right_rotate(root, parent);
+            } else {
+                left_rotate(root, parent);
+            }
+        } else {
+            if (n == parent->left && parent == grandparent->left) {
+                right_rotate(root, grandparent);
+                right_rotate(root, parent);
+            } else if (n == parent->right && parent == grandparent->right) {
+                left_rotate(root, grandparent);
+                left_rotate(root, parent);
+            } else if (n == parent->left && parent == grandparent->right) {
+                right_rotate(root, parent);
+                left_rotate(root, grandparent);
+            } else {
+                left_rotate(root, parent);
+                right_rotate(root, grandparent);
+            }
+        }
+    }
+}
 
 
-// Function Prototypes
-struct node* newNode(char key);
-struct node* rightRotate(struct node* x);
-struct node* leftRotate(struct node* x);
-struct node* splay(struct node* root, char key);
-struct node* search(struct node* root, char key);
-struct node* modSplay(struct node* root, char key);
-void preOrder(struct node* root, FILE *outputFile);
+// Insert operation for Splay tree
+void insert(struct Node **root, char key) {
+    struct Node *temp = *root;
+    struct Node *y = NULL;
+    struct Node *n = (struct Node *)malloc(sizeof(struct Node));
+    n->key = key;
+    n->frequency = 1;
+    n->left = NULL;
+    n->right = NULL;
 
-int comparison_count=0;
-int rotation_count=0;
+    while (temp != NULL) {
+        y = temp;
+        splay_comparisons++;
+        if (key < temp->key) {
+            temp = temp->left;
+        } else if (key > temp->key) {
+            temp = temp->right;
+        } else {
+            temp->frequency++;
+            splay(root, temp);
+            return;
+        }
+    }
+
+    n->parent = y;
+
+    if (y == NULL) {
+        *root = n;
+    } else if (key < y->key) {
+        y->left = n;
+    } else {
+        y->right = n;
+    }
+
+    splay(root, n);
+}
+
+// Mod-Splay operation
+void mod_splay(struct Node **root, struct Node *n) {
+    struct Node *temp = *root;
+    while (temp != NULL) {
+        modsplay_comparisons++;
+        if (temp->frequency < n->frequency) {
+            splay(root, n);
+            modsplay_rotations++;
+            break;
+        }
+        temp = temp->left ? temp->left : temp->right;
+    }
+}
+// Insert operation for Mod-Splay tree
+void mod_insert(struct Node **root, char key) {
+    struct Node *temp = *root;
+    struct Node *y = NULL;
+    struct Node *n = (struct Node *)malloc(sizeof(struct Node));
+    n->key = key;
+    n->frequency = 1;
+    n->left = NULL;
+    n->right = NULL;
+
+    while (temp != NULL) {
+        y = temp;
+        modsplay_comparisons++;
+        if (key < temp->key) {
+            temp = temp->left;
+        } else if (key > temp->key) {
+            temp = temp->right;
+        } else {
+            temp->frequency++;
+            mod_splay(root, temp);
+            return;
+        }
+    }
+
+    n->parent = y;
+
+    if (y == NULL) {
+        *root = n;
+    } else if (key < y->key) {
+        y->left = n;
+    } else {
+        y->right = n;
+    }
+
+    mod_splay(root, n);
+}
+
+// Preorder traversal for printing
+void preOrder(struct Node *root) {
+    if (root != NULL) {
+        printf("%c(%d) ", root->key, root->frequency);
+        preOrder(root->left);
+        preOrder(root->right);
+    }
+}
 
 int main() {
-	
-    FILE *file;
-    char fileName[] = "input.txt";
-    file = fopen(fileName, "r");
+    struct Node *splay_root = NULL;
+    struct Node *modsplay_root = NULL;
     
-    if (file == NULL) {
-        puts("File could not be opened");
-        return 1;
-    }
-    
-
-    FILE *output_file;
-    // Open the output file
-    output_file = fopen("output.txt", "w");
-    if (output_file == NULL) {
-        puts("Output file could not be opened");
-        return 1;
+    char text[] = "ABRCDA"; // Example input text
+    int i;
+    for (i = 0; i < strlen(text); i++) {
+        insert(&splay_root, text[i]);
+        mod_insert(&modsplay_root, text[i]);
     }
 
-    struct node* splayTree = NULL;
-    struct node* modSplayTree = NULL;
-    char ch;
+    printf("Splay Tree Preorder: ");
+    preOrder(splay_root);
+    printf("\n");
 
-    // Process each character in the input file
-    while ((ch = fgetc(file)) != EOF) {
-        splayTree = splay(splayTree, ch);
-        modSplayTree = modSplay(modSplayTree, ch);
-    }
-
-    fclose(file);
-
-    // Write results to the output file
-    fprintf(output_file, "Splay Aðacý (Pre-Order):\n");
-    preOrder(splayTree, output_file);
-    fprintf(output_file, "\nToplam Karþýlaþtýrma: %d, Toplam Rotasyon: %d\n", comparison_count, rotation_count);
-
-    comparison_count = 0;
-    rotation_count = 0;
-
-    fprintf(output_file, "\nMod-Splay Aðacý (Pre-Order):\n");
-    preOrder(modSplayTree, output_file);
-    fprintf(output_file, "\nToplam Karþýlaþtýrma: %d, Toplam Rotasyon: %d\n", comparison_count, rotation_count);
-
-    // Close the output file
-    fclose(output_file);
+    printf("Mod-Splay Tree Preorder: ");
+    preOrder(modsplay_root);
+    printf("\n\n");
+    int splay_total_cost = splay_comparisons + splay_rotations;
+    int modsplay_total_cost = modsplay_comparisons + modsplay_rotations ;
+    printf("Performance Comparison:\n");
+    printf("%-20s %-15s %-15s %-15s\n", "Tree Type", "Comparisons", "Rotations","Cost");
+    printf("%-20s %-15d %-15d %-15d\n", "Splay", splay_comparisons, splay_rotations, splay_total_cost);
+    printf("%-20s %-15d %-15d %-15d\n", "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
 
     return 0;
 }
-// YENÝ NODE EKLEME
-struct node* newNode(char key) {
-	struct node* node=(struct node*)malloc(sizeof(struct node));
-	node->key=key;
-	node->frequency=1;
-	node->left=node->right=NULL;
-	return (node);
-}
-
-
-
-
-struct node *rightRotate(struct node* x) {
-	struct node* y=x->left;
-	x->left=y->right;
-	y->right=x;
-	rotation_count++;
-	return y;
-}
-
-
-struct node *leftRotate(struct node *x) {
-	struct node *y =x->right;
-	x->right=y->left;
-	y->left=x;
-	rotation_count++;
-	return y;
-}
-
-struct node *splay(struct node *root,char key) {
-	if(root==NULL|| root->key==key) {
-	comparison_count++;
-	return root;
-	}
-	if(root->key>key) {
-		comparison_count++;
-		if(root->left==NULL) {
-			return root;
-		}
-	
-	//zig-zig 
-	if(root->left->key>key) {
-		comparison_count++;
-
-		root->left->left=splay(root->left->left,key);
-		
-		root=rightRotate(root);
-	//zig-zag	
-	} else if(root->left->key<key) {
-		comparison_count++;
-		root->left->right=splay(root->left->right,key);
-		
-		if(root->left->right!=NULL){
-			root->left=leftRotate(root->left);
-		
-	}
-}
-	return (root->left==NULL)?root:rightRotate(root);
-	} else { 
-		comparison_count++;
-	   if(root->right==NULL) {
-		return root;
-	}
-	//zag-zig
-	if(root->right->key>key) {
-		comparison_count++;
-		root->right->left=splay(root->right->left,key);
-		
-		if(root->right->left!=NULL) {
-			root->right=rightRotate(root->right);
-		}
-			//zag-zag
-		} else if(root->right->key<key) {
-			comparison_count++;
-			root->right->right=splay(root->right->right,key);
-			root=leftRotate(root);
-		}
-		return root->right==NULL ?root:leftRotate(root);
-	
-	
-
-}}
-
-
-	struct node *search(struct node *root, char key) {
-    return splay(root, key);
-}
-
-struct node* modSplay(struct node* root, char key) {
-    root = search(root, key);
-    if (root->key == key) {
-        root->frequency++;
-    } else {
-        struct node* new_node = newNode(key);
-        if (root == NULL) {
-            return new_node;
-        } else if (root->key > key) {
-            new_node->right = root;
-            new_node->left = root->left;
-            root->left = NULL;
-        } else {
-            new_node->left = root;
-            new_node->right = root->right;
-            root->right = NULL;
-        }
-        root = new_node;
-    }
-
-    if (root->left != NULL && root->left->frequency > root->frequency) {
-        root = rightRotate(root);
-    } else if (root->right != NULL && root->right->frequency > root->frequency) {
-        root = leftRotate(root);
-    }
-
-    return root;
-}
- 
-
-void preOrder(struct node* root, FILE *outputFile) {
-    if (root != NULL) {
-        fprintf(outputFile, "%c (%d) ", root->key, root->frequency);
-        preOrder(root->left, outputFile);
-        preOrder(root->right, outputFile);
-    }
-}
-
 
