@@ -15,6 +15,33 @@ int splay_rotations = 0;
 int modsplay_comparisons = 0;
 int modsplay_rotations = 0;
 
+// Function to create a new node
+struct Node* createNode(int key) {
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->key = key;
+    newNode->frequency = 0;
+    newNode->left = newNode->right = NULL;
+    return newNode;
+}
+
+
+// Function to perform a right rotation
+struct Node* rotateRight(struct Node* y) {
+    struct Node* x = y->left;
+    y->left = x->right;
+    x->right = y;
+    modsplay_rotations += 1; // Zig rotation cost
+    return x;
+}
+
+// Function to perform a left rotation
+struct Node* rotateLeft(struct Node* x) {
+    struct Node* y = x->right;
+    x->right = y->left;
+    y->left = x;
+    modsplay_rotations += 1; // Zig rotation cost
+    return y;
+}
 // Right rotation operation
 void right_rotate(struct Node **root, struct Node *x) {
     struct Node *y = x->left;
