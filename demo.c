@@ -24,7 +24,6 @@ struct Node* createNode(int key) {
     return newNode;
 }
 
-
 // Function to perform a right rotation
 struct Node* rotateRight(struct Node* y) {
     struct Node* x = y->left;
@@ -215,19 +214,8 @@ struct Node* modinsert(struct Node* root, int key) {
     return root;
 }
 
-// Search for a key in the BST and update frequency
-struct Node* search(struct Node* root, int key) {
-    if (root == NULL || root->key == key) {
-        if (root != NULL) root->frequency++;
-        return root;
-    }
 
-    modsplay_comparisons++;
-    if (key < root->key)
-        return search(root->left, key);
-    else
-        return search(root->right, key);
-}
+
 // Find the node with the maximum frequency
 struct Node* findMaxFrequency(struct Node* root, struct Node** maxNode) {
     if (root == NULL)
@@ -242,12 +230,47 @@ struct Node* findMaxFrequency(struct Node* root, struct Node** maxNode) {
     return *maxNode;
 }
 
-// Preorder traversal for printing
-void preOrder(struct Node *root) {
+/*
+// Search for a key in the BST and update frequency
+struct Node* search(struct Node* root, char key) {
+    if (root == NULL || root->key == key) {
+        if (root != NULL) root->frequency++;
+        return root;
+    }
+
+    modsplay_comparisons++;
+    if (key < root->key)
+        return search(root->left, key);
+    else
+        return search(root->right, key);
+}
+*/
+
+// Find the node with the maximum frequency
+
+
+// Pre-order traversal for Mod-Splay Tree
+char preOrderModArray[1000] = ""; // Initialize as empty string
+void preOrderMod(struct Node *root) {
     if (root != NULL) {
-        printf("%c(%d) ", root->key, root->frequency);
-        preOrder(root->left);
-        preOrder(root->right);
+        char buffer[20];
+        sprintf(buffer, "%c(%d) ", root->key, root->frequency);
+        strcat(preOrderModArray, buffer);
+        preOrderMod(root->left);
+        preOrderMod(root->right);
+    }
+}
+//mod splay icin ayri bir preOrder methodu acildi cunku dosyay yazdrima islemi icin kolaylik sagliyor.
+
+// Pre-order traversal for Splay Tree
+char preOrderSplayArray[1000] = ""; // Initialize as empty string
+void preOrderSplay(struct Node *root) {
+    if (root != NULL) {
+        char buffer[20];
+        sprintf(buffer, "%c(%d) ", root->key, root->frequency);
+        strcat(preOrderSplayArray, buffer);
+        preOrderSplay(root->left);
+        preOrderSplay(root->right);
     }
 }
 
@@ -255,54 +278,54 @@ int main() {
     struct Node *splay_root = NULL;
     struct Node *modsplay_root = NULL;
 
-    char text[] = "784"; // Example input text
-    int i;
-
-    // Insert characters into Splay Tree
-    for (i = 0; i < strlen(text); i++) {
-        insert(&splay_root, text[i]);
+    // Open the input file
+    FILE *input_file = fopen("input.txt", "r");
+    if (input_file == NULL) {
+        printf("Input file could not be opened.\n");
+        return 1;
     }
 
-
-    printf("Splay Tree Preorder: ");
-    preOrder(splay_root);
-    printf("\n");
-
-    
-    int keys[] = {7, 8, 4};
-    int n = sizeof(keys) / sizeof(keys[0]);
-    // Insert keys
-    for ( i = 0; i < n; i++) {
-        modsplay_root = modinsert(modsplay_root, keys[i]);
-    }
-
-    // Search keys and perform splay if needed
-    int searchKeys[] = {4,8,8};
-    int searchCount = sizeof(searchKeys) / sizeof(searchKeys[0]);
-
-    for ( i = 0; i < searchCount; i++) {
-        struct Node* node = search(modsplay_root, searchKeys[i]);
-
-
-        if (node != NULL) {
-            struct Node* maxNode = NULL;
-            findMaxFrequency(modsplay_root, &maxNode);
-
-            if (maxNode->key == node->key) {
-                modsplay_root = modsplay(modsplay_root, node->key);
-            }
+    // Read data from the input file (ignoring commas)
+    char array[1000];
+    int i = 0;
+    char ch;
+    while ((ch = fgetc(input_file)) != EOF) {
+        if (ch != ',') {  // Ignore commas
+            array[i++] = ch;
         }
     }
-    printf("Mod-Splay Tree Preorder: ");
-    preOrder(modsplay_root);
-    printf("\n\n");
+    array[i] = '\0';  // Null-terminate the string
+
+    fclose(input_file);
+
+    // Insert elements into both trees
+    for (i = 0; i < strlen(array); i++) {
+        insert(&splay_root, array[i]);
+        modsplay_root = modinsert(modsplay_root, array[i]);
+    }
+
+    // Perform preorder traversal and store result in the arrays
+    preOrderSplay(splay_root);
+    preOrderMod(modsplay_root);
+
     int splay_total_cost = splay_comparisons + splay_rotations;
     int modsplay_total_cost = modsplay_comparisons + modsplay_rotations;
 
-    printf("Performance Comparison:\n");
-    printf("%-20s %-15s %-15s %-15s\n", "Tree Type", "Comparisons", "Rotations", "Cost");
-    printf("%-20s %-15d %-15d %-15d\n", "Splay", splay_comparisons, splay_rotations, splay_total_cost);
-    printf("%-20s %-15d %-15d %-15d\n", "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
+    // Output results to file
+    FILE *output_file = fopen("output.txt", "w");
+    if (output_file == NULL) {
+        printf("Output file could not be opened.\n");
+        return 1;
+    }
 
+    // Output Splay and Mod-Splay Trees and performance comparison
+    fprintf(output_file, "Splay Tree Preorder:\n%s\n", preOrderSplayArray);
+    fprintf(output_file, "Mod-Splay Tree Preorder:\n%s\n", preOrderModArray);
+    fprintf(output_file, "\nPerformance Comparison:\n");
+    fprintf(output_file, " %-20s %-15s %-15s %-15s\n", "Tree Type", "Comparisons", "Rotations", "Cost");
+    fprintf(output_file, " %-20s %-15d %-15d %-15d\n", "Splay", splay_comparisons, splay_rotations, splay_total_cost);
+    fprintf(output_file, " %-20s %-15d %-15d %-15d\n", "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
+
+    fclose(output_file);
     return 0;
 }
