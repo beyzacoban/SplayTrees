@@ -1,8 +1,8 @@
 Splay Tree Preorder: 
-A(0) C(0) D(0) 
+l(0) k(0) y(0) 
 Mod-Splay Tree Preorder: 
-C(1) A(1) D(1) 
+y(1) k(1) l(1) 
 Performance Comparison:
  Tree Type            Comparisons     Rotations       Cost           
  Splay                3               3               6              
- Mod-Splay            7               0               7              
+ Mod-Splay            9               0               9              
