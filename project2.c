@@ -92,7 +92,6 @@ void insert(struct Node **root, char key) {
     struct Node *y = NULL;
     struct Node *n = (struct Node *)malloc(sizeof(struct Node));
     n->key = key;
-    n->frequency = 1;
     n->left = NULL;
     n->right = NULL;
 
@@ -172,41 +171,72 @@ void mod_insert(struct Node **root, char key) {
 
     mod_splay(root, n);
 }
-
+char preOrderSplayArray[100];
+char preOrderModArray[100];
 // Preorder traversal for printing
-void preOrder(struct Node *root) {
+void preOrderSplay(struct Node *root) {
     if (root != NULL) {
-        printf("%c(%d) ", root->key, root->frequency);
-        preOrder(root->left);
-        preOrder(root->right);
+        sprintf(preOrderSplayArray+ strlen(preOrderSplayArray),"%c(%d) ", root->key, root->frequency);
+        preOrderSplay(root->left);
+        preOrderSplay(root->right);
     }
 }
+//mod splay icin ayri bir preOrder methodu acildi cunku dosyay yazdrima islemi icin kolaylik sagliyor.
+void preOrderMod(struct Node *root) {
+    if (root != NULL) {
+        sprintf(preOrderModArray+ strlen(preOrderModArray),"%c(%d) ", root->key, root->frequency);
+        preOrderMod(root->left);
+        preOrderMod(root->right);
+    }
+}
+
 
 int main() {
     struct Node *splay_root = NULL;
     struct Node *modsplay_root = NULL;
+    FILE *input_file = fopen("input.txt", "r");
+        if(input_file ==NULL){
+            perror("the file is not opened");
+            return 1;
+        }
     
-    char text[] = "ABRCDA"; // Example input text
+    char array[100]; //input array
     int i;
-    for (i = 0; i < strlen(text); i++) {
-        insert(&splay_root, text[i]);
-        mod_insert(&modsplay_root, text[i]);
+    while(!feof(input_file)){
+    size_t lenght_read = fread(array,sizeof(char),sizeof(array)-1,input_file);
+    array[lenght_read]= '\0';
+    }
+    fclose(input_file);
+    for (i = 0; i < strlen(array); i++) {
+        insert(&splay_root, array[i]);
+        mod_insert(&modsplay_root, array[i]);
     }
 
-    printf("Splay Tree Preorder: ");
-    preOrder(splay_root);
-    printf("\n");
-
-    printf("Mod-Splay Tree Preorder: ");
-    preOrder(modsplay_root);
-    printf("\n\n");
+    
+    //printf("Performance Comparison:\n");
+    //printf("%-20s %-15s %-15s %-15s\n", "Tree Type", "Comparisons", "Rotations","Cost");
+    //printf("%-20s %-15d %-15d %-15d\n", "Splay", splay_comparisons, splay_rotations, splay_total_cost);
+    //printf("%-20s %-15d %-15d %-15d\n", "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
+    
+    
+    FILE *output_file = fopen("output.txt","w");
+     if (output_file == NULL) {
+        printf("Dosya açılamadı.\n");
+        }
+    
+    preOrderSplay(splay_root);
+    preOrderMod(modsplay_root);
+    
     int splay_total_cost = splay_comparisons + splay_rotations;
     int modsplay_total_cost = modsplay_comparisons + modsplay_rotations ;
-    printf("Performance Comparison:\n");
-    printf("%-20s %-15s %-15s %-15s\n", "Tree Type", "Comparisons", "Rotations","Cost");
-    printf("%-20s %-15d %-15d %-15d\n", "Splay", splay_comparisons, splay_rotations, splay_total_cost);
-    printf("%-20s %-15d %-15d %-15d\n", "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
-
+    
+    fprintf(output_file,"Splay Tree Preorder: \n" "%s", preOrderSplayArray);
+    fprintf(output_file,"\nMod-Splay Tree Preorder: \n" "%s", preOrderModArray);
+    fprintf(output_file,
+        "\nPerformance Comparison:\n"
+        " %-20s %-15s %-15s %-15s\n" " %-20s %-15d %-15d %-15d\n" " %-20s %-15d %-15d %-15d\n",
+        "Tree Type", "Comparisons", "Rotations", "Cost",  "Splay", splay_comparisons, splay_rotations, splay_total_cost, "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
+    fclose(output_file);
     return 0;
 }
 
