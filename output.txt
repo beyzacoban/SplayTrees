@@ -1,11 +1,13 @@
-Splay Tree Preorder:
+Input:
+7,8,4,6,2,5,3,9,3,5,5
 
-(1) 5(3) 2(1) 3(2) 4(1) 6(1) 9(1) 8(1) 7(1) 
+
+Splay Tree Preorder:
+5, 3, 2, 4, 6, 9, 8, 7, 
 Mod-Splay Tree Preorder:
-7(0) 4(0) 2(0) 
-(0) 3(0) 6(0) 5(0) 8(0) 9(0) 
+5(4) 4(0) 3(2) 2(0) 6(0) 7(0) 8(0) 9(0) 
 
 Performance Comparison:
  Tree Type            Comparisons     Rotations       Cost           
- Splay                28              25              53             
- Mod-Splay            29              0               29             
+ Splay                25              22              47             
+ Mod-Splay            54              7               61             

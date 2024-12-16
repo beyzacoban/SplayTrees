@@ -255,7 +255,7 @@ int main() {
     struct Node *splay_root = NULL;
     struct Node *modsplay_root = NULL;
 
-    char text[] = "784"; // Example input text
+    char text[] = "8744"; // Example input text
     int i;
 
     // Insert characters into Splay Tree
@@ -269,7 +269,7 @@ int main() {
     printf("\n");
 
     
-    int keys[] = {7, 8, 4};
+    int keys[] = {7,8,4,6,2,5,3,9,3,5,5};
     int n = sizeof(keys) / sizeof(keys[0]);
     // Insert keys
     for ( i = 0; i < n; i++) {
@@ -277,7 +277,7 @@ int main() {
     }
 
     // Search keys and perform splay if needed
-    int searchKeys[] = {4,8,8};
+    int searchKeys[] = {5};
     int searchCount = sizeof(searchKeys) / sizeof(searchKeys[0]);
 
     for ( i = 0; i < searchCount; i++) {
