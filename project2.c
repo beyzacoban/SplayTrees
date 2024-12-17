@@ -1,14 +1,33 @@
+/* Beyza Coban 150123069
+   Beyza Parmak 
+   This program compares the performance of Splay Trees and Mod-Splay by calculating the number of comparisons, rotations, total cost, and their preorder traversal.
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-struct Node {
+typedef struct Node {
     char key;  
     int frequency;
     struct Node *left;
     struct Node *right;
     struct Node *parent;
-};
+}node;
+
+// Function Prototypes
+node* createNode(int key);
+void right_rotation(node **root, node *x);
+void left_rotation(node **root, node *x);
+void splay(node **root, node *n);
+void insert(node **root, char key);
+void rotateRight(node **root, node *x);
+void rotateLeft(node **root, node *x);
+void modsplay(node **root, node *n);
+void modinsert(node **root, char key);
+void preOrderSplay(node *root);
+void preOrderMod(node *root);
+node* search(node* root, char key);
+
 
 int splay_comparisons = 0;
 int splay_rotations = 0;
@@ -21,16 +40,17 @@ char preOrderSplayArray[1000] = "";
 char preOrderModArray[1000] = "";    
 
 // Function to create a new node
-struct Node* createNode(int key) {
-    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+node* createNode(int key) {
+    node* newNode = (node*)malloc(sizeof(node));
     newNode->key = key;
     newNode->frequency = 0;
     newNode->left = newNode->right = NULL;
     return newNode;
 }
 
-void rotateRight(struct Node **root, struct Node *x) {
-    struct Node *y = x->left;
+// Right rotation for Mod-Splay tree
+void rotateRight(node **root, node *x) {
+    node *y = x->left;
     x->left = y->right;
     if (y->right != NULL) {
         y->right->parent = x;
@@ -48,9 +68,9 @@ void rotateRight(struct Node **root, struct Node *x) {
     modsplay_rotations++;
 }
 
-// Left rotation operation
-void rotateLeft(struct Node **root, struct Node *x) {
-    struct Node *y = x->right;
+// Left rotation for Mod-Splay tree
+void rotateLeft(node **root, node *x) {
+    node *y = x->right;
     x->right = y->left;
     if (y->left != NULL) {
         y->left->parent = x;
@@ -68,9 +88,9 @@ void rotateLeft(struct Node **root, struct Node *x) {
     modsplay_rotations++;
 }
 
-// Right rotation operation
-void right_rotate(struct Node **root, struct Node *x) {
-    struct Node *y = x->left;
+// Right rotation for Splay tree
+void right_rotation (node **root, node *x) {
+    node *y = x->left;
     x->left = y->right;
     if (y->right != NULL) {
         y->right->parent = x;
@@ -88,9 +108,9 @@ void right_rotate(struct Node **root, struct Node *x) {
     splay_rotations++;
 }
 
-// Left rotation operation
-void left_rotate(struct Node **root, struct Node *x) {
-    struct Node *y = x->right;
+// Left rotation for Splay tree
+void left_rotation(node **root, node *x) {
+    node *y = x->right;
     x->right = y->left;
     if (y->left != NULL) {
         y->left->parent = x;
@@ -108,43 +128,44 @@ void left_rotate(struct Node **root, struct Node *x) {
     splay_rotations++;
 }
 
-// Splay operation
-void splay(struct Node **root, struct Node *n) {
+// Splay operation to move a node to the root
+void splay(node **root, node *n) {
     while (n->parent != NULL) {
-        struct Node *parent = n->parent;
-        struct Node *grandparent = parent->parent;
+        node *parent = n->parent;
+        node *grandparent = parent->parent;
 
         if (parent == *root) {
+        	//zig
             if (n == parent->left) {
-                right_rotate(root, parent);
+                right_rotation(root, parent);
             } else {
-                left_rotate(root, parent);
+                left_rotation(root, parent);
             }
         } else {
             if (n == parent->left && parent == grandparent->left) {
-                right_rotate(root, grandparent);
-                right_rotate(root, parent);
+                right_rotation(root, grandparent);
+                right_rotation(root, parent);
             } else if (n == parent->right && parent == grandparent->right) {
-                left_rotate(root, grandparent);
-                left_rotate(root, parent);
+                left_rotation(root, grandparent);
+                left_rotation(root, parent);
             } else if (n == parent->left && parent == grandparent->right) {
-                right_rotate(root, parent);
-                left_rotate(root, grandparent);
+                right_rotation(root, parent);
+                left_rotation(root, grandparent);
             } else {
-                left_rotate(root, parent);
-                right_rotate(root, grandparent);
+                left_rotation(root, parent);
+                right_rotation(root, grandparent);
             }
         }
     }
 }
 
 // Insert operation for Splay tree
-void insert(struct Node **root, char key) {
-    struct Node *temp = *root;
-    struct Node *y = NULL;
-    struct Node *n = (struct Node *)malloc(sizeof(struct Node));
+void insert(node **root, char key) {
+    node *temp = *root;
+    node *y = NULL;
+    node *n = (node *)malloc(sizeof(node));
     n->key = key;
-    n->frequency = 1;
+    n->frequency = 0;
     n->left = NULL;
     n->right = NULL;
 
@@ -161,7 +182,7 @@ void insert(struct Node **root, char key) {
             return;
         }
     }
-
+ 
     n->parent = y;
 
     if (y == NULL) {
@@ -175,12 +196,11 @@ void insert(struct Node **root, char key) {
     splay(root, n);
 }
 
-// Mod-Splay operation: Move the node with greater frequency to root
-void modsplay(struct Node **root, struct Node *n) {
+// Mod-Splay operation: Move node with higher frequency to root
+void modsplay(node **root, node *n) {
     while (n->parent != NULL) {
-        struct Node *parent = n->parent;
-        struct Node *grandparent = parent->parent;
-        // modsplaydaki splay operationlarý if (node->frequency >root->frequency ) nin içine alýp else durumunda geri dönmek
+        node *parent = n->parent;
+        node *grandparent = parent->parent;
         if (n->frequency > (*root)->frequency) {
             if (parent == *root) {
                 if (n == parent->left) {
@@ -208,11 +228,11 @@ void modsplay(struct Node **root, struct Node *n) {
         }
     }
 }
-
-void modinsert(struct Node **root, char key) {
-    struct Node *temp = *root;
-    struct Node *y = NULL;
-    struct Node *n = (struct Node *)malloc(sizeof(struct Node));
+// Insert operation for Mod-Splay tree
+void modinsert(node **root, char key) {
+    node *temp = *root;
+    node *y = NULL;
+    node *n = (node *)malloc(sizeof(node));
     n->key = key;
     n->frequency = 0;
     n->left = NULL;
@@ -245,23 +265,25 @@ void modinsert(struct Node **root, char key) {
     modsplay(root, n);
 }
 
-// Preorder traversal for printing
-void preOrderSplay(struct Node *root) {
+// Preorder traversal for Splay tree
+void preOrderSplay(node *root) {
     if (root != NULL) {
         sprintf(preOrderSplayArray+ strlen(preOrderSplayArray),"%c, ", root->key);
         preOrderSplay(root->left);
         preOrderSplay(root->right);
     }
 }
-//mod splay icin ayri bir preOrder methodu acildi cunku dosyay yazdrima islemi icin kolaylik sagliyor.
-void preOrderMod(struct Node *root) {
+
+// Preorder traversal for Mod-Splay tree
+void preOrderMod(node *root) {
     if (root != NULL) {
-        sprintf(preOrderModArray+ strlen(preOrderModArray),"%c(%d) ", root->key, root->frequency);
+        sprintf(preOrderModArray+ strlen(preOrderModArray),"(%c,%d), ", root->key, root->frequency);
         preOrderMod(root->left);
         preOrderMod(root->right);
     }
 }
-struct Node* search(struct Node* root, char key) {
+
+node* search(node* root, char key) {
     if (root == NULL || root->key == key)
         return root;
     
@@ -274,9 +296,9 @@ struct Node* search(struct Node* root, char key) {
 
 
 int main() {
-    struct Node *splay_root = NULL;
-    struct Node *modsplay_root = NULL;
-    struct Node *modsplay_node = NULL; 
+    node *splay_root = NULL;
+    node *modsplay_root = NULL;
+    node *modsplay_node = NULL; 
 
     // Read input from file
     FILE *input_file = fopen("input.txt", "r");
@@ -296,22 +318,12 @@ int main() {
     // Insert characters into Splay and Mod-Splay trees
     for (i = 0; i < strlen(array)-1; i++) {
     	 if (array[i] == ',') {
-        continue; // Virgülü atla
+        continue; 
     }
         insert(&splay_root, array[i]);
-    }
-
-    // Perform pre-order traversal and store result in arrays
-    preOrderSplay(splay_root);
-
- // Mod-Splay Tree adjustments
-    for (i = 0; i < strlen(array) - 1; i++) {
-    	 if (array[i] == ',') {
-        continue; // Virgülü atla
-    }
-          modinsert(&modsplay_root, array[i]);
+        modinsert(&modsplay_root, array[i]);
      
-    modsplay_node = search(modsplay_root, array[i]);
+   modsplay_node = search(modsplay_root, array[i]);
     
     // If the node is found, splay it; otherwise, insert it
     if (modsplay_node != NULL) {
@@ -319,8 +331,11 @@ int main() {
     } else {
         modinsert(&modsplay_root, array[i]);
     }
-}
-     preOrderMod(modsplay_root);
+    }
+
+    // Perform pre-order traversal and store result in arrays
+    preOrderSplay(splay_root);
+    preOrderMod(modsplay_root);
 
     // Write results to the output file
     FILE *output_file = fopen("output.txt", "w");
@@ -330,14 +345,13 @@ int main() {
     }
 
     // Write input content to output file
-    fprintf(output_file, "Input:\n%s\n\n", array);
+    fprintf(output_file, "Input:\n%s\n", array);
 
     // Calculate total cost for both trees
     int splay_total_cost = splay_comparisons + splay_rotations;
     int modsplay_total_cost = modsplay_comparisons + modsplay_rotations;
-    fprintf(output_file, "Splay Tree Preorder:\n%s\n", preOrderSplayArray);
-    fprintf(output_file, "Mod-Splay Tree Preorder:\n%s\n", preOrderModArray);
-    fprintf(output_file, "\nPerformance Comparison:\n");
+    fprintf(output_file, "Splay Tree Preorder:\n%s\n\n", preOrderSplayArray);
+    fprintf(output_file, "Mod-Splay Tree Preorder:\n%s\n\n", preOrderModArray);
     fprintf(output_file, " %-20s %-15s %-15s %-15s\n", "Tree Type", "Comparisons", "Rotations", "Cost");
     fprintf(output_file, " %-20s %-15d %-15d %-15d\n", "Splay", splay_comparisons, splay_rotations, splay_total_cost);
     fprintf(output_file, " %-20s %-15d %-15d %-15d\n", "Mod-Splay", modsplay_comparisons, modsplay_rotations, modsplay_total_cost);
