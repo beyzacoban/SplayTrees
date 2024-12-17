@@ -17,8 +17,8 @@ int modsplay_rotations = 0;
 int splay_total_cost=0;
 int modsplay_total_cost=0;
 
-char preOrderSplayArray[1000] = "";  // Pre-order for Splay Tree
-char preOrderModArray[1000] = "";    // Pre-order for Mod-Splay Tree
+char preOrderSplayArray[1000] = "";  
+char preOrderModArray[1000] = "";    
 
 // Function to create a new node
 struct Node* createNode(int key) {
@@ -29,24 +29,45 @@ struct Node* createNode(int key) {
     return newNode;
 }
 
-
-// Function to perform a right rotation
-struct Node* rotateRight(struct Node* y) {
-    struct Node* x = y->left;
-    y->left = x->right;
-    x->right = y;
-    modsplay_rotations += 1; // Zig rotation cost
-    return x;
+void rotateRight(struct Node **root, struct Node *x) {
+    struct Node *y = x->left;
+    x->left = y->right;
+    if (y->right != NULL) {
+        y->right->parent = x;
+    }
+    y->parent = x->parent;
+    if (x == *root) {
+        *root = y;
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
+    }
+    y->right = x;
+    x->parent = y;
+    modsplay_rotations++;
 }
 
-// Function to perform a left rotation
-struct Node* rotateLeft(struct Node* x) {
-    struct Node* y = x->right;
+// Left rotation operation
+void rotateLeft(struct Node **root, struct Node *x) {
+    struct Node *y = x->right;
     x->right = y->left;
+    if (y->left != NULL) {
+        y->left->parent = x;
+    }
+    y->parent = x->parent;
+    if (x == *root) {
+        *root = y;
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
+    }
     y->left = x;
-    modsplay_rotations += 1; // Zig rotation cost
-    return y;
+    x->parent = y;
+    modsplay_rotations++;
 }
+
 // Right rotation operation
 void right_rotate(struct Node **root, struct Node *x) {
     struct Node *y = x->left;
@@ -117,7 +138,6 @@ void splay(struct Node **root, struct Node *n) {
     }
 }
 
-
 // Insert operation for Splay tree
 void insert(struct Node **root, char key) {
     struct Node *temp = *root;
@@ -155,98 +175,75 @@ void insert(struct Node **root, char key) {
     splay(root, n);
 }
 
-// Splay function to move the most frequent node to the root
-struct Node* modsplay(struct Node* root, int key) {
-    if (root == NULL || root->key == key)
-        return root;
+// Mod-Splay operation: Move the node with greater frequency to root
+void modsplay(struct Node **root, struct Node *n) {
+    while (n->parent != NULL) {
+        struct Node *parent = n->parent;
+        struct Node *grandparent = parent->parent;
+        // modsplaydaki splay operationlarý if (node->frequency >root->frequency ) nin içine alýp else durumunda geri dönmek
+        if (n->frequency > (*root)->frequency) {
+            if (parent == *root) {
+                if (n == parent->left) {
+                    rotateRight(root, parent);
+                } else {
+                    rotateLeft(root, parent);
+                }
+            } else {
+                if (n == parent->left && parent == grandparent->left) {
+                    rotateRight(root, grandparent);
+                    rotateRight(root, parent);
+                } else if (n == parent->right && parent == grandparent->right) {
+                    rotateLeft(root, grandparent);
+                    rotateLeft(root, parent);
+                } else if (n == parent->left && parent == grandparent->right) {
+                    rotateRight(root, parent);
+                    rotateLeft(root, grandparent);
+                } else {
+                    rotateLeft(root, parent);
+                    rotateRight(root, grandparent);
+                }
+            }
+        } else {
+            return; // If frequency is not greater, do nothing
+        }
+    }
+}
 
-    // Key is in the left subtree
-    if (key < root->key) {
+void modinsert(struct Node **root, char key) {
+    struct Node *temp = *root;
+    struct Node *y = NULL;
+    struct Node *n = (struct Node *)malloc(sizeof(struct Node));
+    n->key = key;
+    n->frequency = 0;
+    n->left = NULL;
+    n->right = NULL;
+
+    while (temp != NULL) {
+        y = temp;
         modsplay_comparisons++;
-        if (root->left == NULL)
-            return root;
-
-        // Zig-Zig (Left Left)
-        if (key < root->left->key) {
-            modsplay_comparisons++;
-            root->left->left = modsplay(root->left->left, key);
-            root = rotateRight(root);
+        if (key < temp->key) {
+            temp = temp->left;
+        } else if (key > temp->key) {
+            temp = temp->right;
+        } else {
+            temp->frequency++;
+            modsplay(root, temp);
+            return;
         }
-        // Zig-Zag (Left Right)
-        else if (key > root->left->key) {
-            modsplay_comparisons++;
-            root->left->right = modsplay(root->left->right, key);
-            if (root->left->right != NULL)
-                root->left = rotateLeft(root->left);
-        }
-
-        return (root->left == NULL) ? root : rotateRight(root);
-    }
-    // Key is in the right subtree
-    else {
-        modsplay_comparisons++;
-        if (root->right == NULL)
-            return root;
-
-        // Zig-Zig (Right Right)
-        if (key > root->right->key) {
-            modsplay_comparisons++;
-            root->right->right = modsplay(root->right->right, key);
-            root = rotateLeft(root);
-        }
-        // Zig-Zag (Right Left)
-        else if (key < root->right->key) {
-            modsplay_comparisons++;
-            root->right->left = modsplay(root->right->left, key);
-            if (root->right->left != NULL)
-                root->right = rotateRight(root->right);
-        }
-
-        return (root->right == NULL) ? root : rotateLeft(root);
-    }
-}
-
-// Insert a key into the BST
-struct Node* modinsert(struct Node* root, int key) {
-    if (root == NULL)
-        return createNode(key);
-
-    modsplay_comparisons++;
-    if (key < root->key)
-        root->left = modinsert(root->left, key);
-    else if (key > root->key)
-        root->right = modinsert(root->right, key);
-
-    return root;
-}
-
-// Search for a key in Mod-Splay tree
-struct Node* search(struct Node* root, int key) {
-    if (root == NULL || root->key == key) {
-        if (root != NULL) root->frequency++;
-        return root;
     }
 
-    modsplay_comparisons++;
-    if (key < root->key)
-        return search(root->left, key);
-    else
-        return search(root->right, key);
+    n->parent = y;
+
+    if (y == NULL) {
+        *root = n;
+    } else if (key < y->key) {
+        y->left = n;
+    } else {
+        y->right = n;
+    }
+
+    modsplay(root, n);
 }
-// Find the node with the maximum frequency
-struct Node* findMaxFrequency(struct Node* root, struct Node** maxNode) {
-    if (root == NULL)
-        return NULL;
-
-    if (*maxNode == NULL || root->frequency > (*maxNode)->frequency)
-        *maxNode = root;
-
-    findMaxFrequency(root->left, maxNode);
-    findMaxFrequency(root->right, maxNode);
-
-    return *maxNode;
-}
-
 
 // Preorder traversal for printing
 void preOrderSplay(struct Node *root) {
@@ -264,12 +261,22 @@ void preOrderMod(struct Node *root) {
         preOrderMod(root->right);
     }
 }
+struct Node* search(struct Node* root, char key) {
+    if (root == NULL || root->key == key)
+        return root;
+    
+    if (key < root->key)
+        return search(root->left, key);
+    else
+        return search(root->right, key);
+}
 
 
 
 int main() {
     struct Node *splay_root = NULL;
     struct Node *modsplay_root = NULL;
+    struct Node *modsplay_node = NULL; 
 
     // Read input from file
     FILE *input_file = fopen("input.txt", "r");
@@ -297,37 +304,22 @@ int main() {
     // Perform pre-order traversal and store result in arrays
     preOrderSplay(splay_root);
 
-  //  preOrderMod(modsplay_root);
  // Mod-Splay Tree adjustments
     for (i = 0; i < strlen(array) - 1; i++) {
     	 if (array[i] == ',') {
         continue; // Virgülü atla
     }
-        struct Node* modsplay_node = search(modsplay_root, array[i]);
-        if (modsplay_node != NULL) {
-            modsplay_node->frequency++;
-            modsplay_root = modsplay(modsplay_root, array[i]);
-        } else {
-            modsplay_root = modinsert(modsplay_root, array[i]);
-        }
+          modinsert(&modsplay_root, array[i]);
+     
+    modsplay_node = search(modsplay_root, array[i]);
+    
+    // If the node is found, splay it; otherwise, insert it
+    if (modsplay_node != NULL) {
+        modsplay(&modsplay_root, modsplay_node);
+    } else {
+        modinsert(&modsplay_root, array[i]);
     }
-    // Search keys and perform splay if needed
-    int searchKeys[] = {4,8,8};
-    int searchCount = sizeof(searchKeys) / sizeof(searchKeys[0]);
-
-    for ( i = 0; i < searchCount; i++) {
-        struct Node* node = search(modsplay_root, searchKeys[i]);
-
-
-        if (node != NULL) {
-            struct Node* maxNode = NULL;
-            findMaxFrequency(modsplay_root, &maxNode);
-
-            if (maxNode->key == node->key) {
-                modsplay_root = modsplay(modsplay_root, node->key);
-            }
-        }
-    }
+}
      preOrderMod(modsplay_root);
 
     // Write results to the output file
